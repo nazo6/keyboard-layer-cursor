@@ -2,9 +2,31 @@ use async_hid::{AccessMode, DeviceInfo};
 use futures::StreamExt as _;
 use winit::event_loop::EventLoopProxy;
 
-use crate::window::CustomEventLoopEvent;
+use crate::{LayerConfig, window::CustomEventLoopEvent};
 
-pub async fn hid_task(proxy: EventLoopProxy<CustomEventLoopEvent>) -> anyhow::Result<()> {
+pub async fn hid_task(
+    proxy: EventLoopProxy<CustomEventLoopEvent>,
+    config: Vec<LayerConfig>,
+) -> anyhow::Result<()> {
+    loop {
+        if let Err(e) = handle_hid(&proxy, &config).await {
+            println!("HID reconnecting: {:?}", e);
+            tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+        }
+    }
+}
+
+async fn handle_hid(
+    proxy: &EventLoopProxy<CustomEventLoopEvent>,
+    config: &Vec<LayerConfig>,
+) -> anyhow::Result<()> {
+    let layer_to_ev = |l: usize| -> Option<CustomEventLoopEvent> {
+        config.get(l).map(|l| match l {
+            LayerConfig::Color(r, g, b) => CustomEventLoopEvent::SetColor(*r, *g, *b),
+            LayerConfig::None => CustomEventLoopEvent::SetHide,
+        })
+    };
+
     let mut devices = DeviceInfo::enumerate().await?;
     let mut device = None;
     while let Some(info) = devices.next().await {
@@ -19,22 +41,18 @@ pub async fn hid_task(proxy: EventLoopProxy<CustomEventLoopEvent>) -> anyhow::Re
 
     let device = device.open(AccessMode::ReadWrite).await?;
 
-    let _ = proxy.send_event(CustomEventLoopEvent::SetColor(255, 0, 0));
+    if let Some(ev) = layer_to_ev(0) {
+        let _ = proxy.send_event(ev);
+    }
 
     loop {
         let mut buf = [0; 32];
         device.read_input_report(&mut buf).await?;
         if buf[0] == 0x01 {
             println!("Layer: {}", buf[1]);
-            let color = match buf[1] {
-                0 => (0, 0, 255),
-                1 => (0, 255, 0),
-                2 => (255, 0, 0),
-                _ => {
-                    continue;
-                }
-            };
-            let _ = proxy.send_event(CustomEventLoopEvent::SetColor(color.0, color.1, color.2));
+            if let Some(ev) = layer_to_ev(buf[1] as usize) {
+                let _ = proxy.send_event(ev);
+            }
         }
     }
 }

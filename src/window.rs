@@ -1,31 +1,35 @@
-use std::{ffi::c_void, num::NonZeroU32, sync::Arc};
+use std::{num::NonZeroU32, sync::Arc};
 
 use winit::{
     application::ApplicationHandler,
     dpi::{LogicalPosition, LogicalSize},
     event::WindowEvent,
     event_loop::ActiveEventLoop,
-    raw_window_handle::{HasWindowHandle, RawWindowHandle},
+    platform::windows::WindowAttributesExtWindows,
     window::{Window, WindowId},
 };
-use winsafe::{HWND, prelude::Handle};
+
+use crate::Config;
 
 pub struct App {
-    color: (u8, u8, u8),
+    show: Option<(u8, u8, u8)>,
     surface: Option<softbuffer::Surface<Arc<Window>, Arc<Window>>>,
+    config: Config,
 }
 
 pub enum CustomEventLoopEvent {
     Redraw,
     SetColor(u8, u8, u8),
     SetPos(i32, i32),
+    SetHide,
 }
 
 impl App {
-    pub fn new() -> Self {
+    pub fn new(config: Config) -> Self {
         Self {
-            color: (0, 0, 0),
+            show: None,
             surface: None,
+            config,
         }
     }
 }
@@ -33,9 +37,11 @@ impl App {
 impl ApplicationHandler<CustomEventLoopEvent> for App {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
         let attr = Window::default_attributes()
-            .with_inner_size(LogicalSize::new(5, 10))
+            .with_inner_size(LogicalSize::new(self.config.size.0, self.config.size.1))
             .with_transparent(false)
             .with_window_level(winit::window::WindowLevel::AlwaysOnTop)
+            .with_visible(self.show.is_some())
+            .with_skip_taskbar(true)
             .with_decorations(false);
         let window = Arc::new(event_loop.create_window(attr).unwrap());
         let context = softbuffer::Context::new(window.clone()).unwrap();
@@ -48,11 +54,18 @@ impl ApplicationHandler<CustomEventLoopEvent> for App {
             match event {
                 CustomEventLoopEvent::Redraw => {}
                 CustomEventLoopEvent::SetColor(r, g, b) => {
-                    self.color = (r, g, b);
+                    s.window().set_visible(true);
+                    self.show = Some((r, g, b));
                 }
                 CustomEventLoopEvent::SetPos(x, y) => {
-                    s.window()
-                        .set_outer_position(LogicalPosition::new(x + 20, y + 5));
+                    s.window().set_outer_position(LogicalPosition::new(
+                        x + self.config.offset.0,
+                        y + self.config.offset.1,
+                    ));
+                }
+                CustomEventLoopEvent::SetHide => {
+                    s.window().set_visible(false);
+                    self.show = None;
                 }
             }
 
@@ -67,7 +80,7 @@ impl ApplicationHandler<CustomEventLoopEvent> for App {
                 event_loop.exit();
             }
             WindowEvent::RedrawRequested => {
-                if let Some(surface) = self.surface.as_mut() {
+                if let (Some(surface), Some(color)) = (self.surface.as_mut(), self.show) {
                     if surface.window().id() == id {
                         let (width, height) = {
                             let size = surface.window().inner_size();
@@ -82,9 +95,8 @@ impl ApplicationHandler<CustomEventLoopEvent> for App {
 
                         let mut buffer = surface.buffer_mut().unwrap();
                         for index in 0..(width * height) {
-                            buffer[index as usize] = self.color.2 as u32
-                                | ((self.color.1 as u32) << 8)
-                                | ((self.color.0 as u32) << 16);
+                            buffer[index as usize] =
+                                color.2 as u32 | ((color.1 as u32) << 8) | ((color.0 as u32) << 16);
                         }
 
                         buffer.present().unwrap();
@@ -96,12 +108,12 @@ impl ApplicationHandler<CustomEventLoopEvent> for App {
     }
 }
 
-fn get_hwnd(window: &Window) -> Result<HWND, winit::raw_window_handle::HandleError> {
-    let handle = window.window_handle()?;
-    if let RawWindowHandle::Win32(handle) = handle.as_raw() {
-        let hwnd = handle.hwnd;
-        Ok(unsafe { Handle::from_ptr(hwnd.get() as *mut c_void) })
-    } else {
-        panic!("Unsupported platform");
-    }
-}
+// fn get_hwnd(window: &Window) -> Result<HWND, winit::raw_window_handle::HandleError> {
+//     let handle = window.window_handle()?;
+//     if let RawWindowHandle::Win32(handle) = handle.as_raw() {
+//         let hwnd = handle.hwnd;
+//         Ok(unsafe { Handle::from_ptr(hwnd.get() as *mut c_void) })
+//     } else {
+//         panic!("Unsupported platform");
+//     }
+// }
