@@ -778,6 +778,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "keyboard-layer-cursor"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-hid",
+ "futures",
+ "softbuffer",
+ "tokio",
+ "windows 0.60.0",
+ "wineventhook",
+ "winit",
+ "winsafe",
+]
+
+[[package]]
 name = "libc"
 version = "0.2.170"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -874,21 +889,6 @@ dependencies = [
  "libc",
  "wasi",
  "windows-sys 0.52.0",
-]
-
-[[package]]
-name = "my-keyboard-utils"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-hid",
- "futures",
- "softbuffer",
- "tokio",
- "windows 0.60.0",
- "wineventhook",
- "winit",
- "winsafe",
 ]
 
 [[package]]

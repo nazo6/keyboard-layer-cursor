@@ -34,6 +34,14 @@ static CONFIG: LazyLock<Config> = LazyLock::new(|| Config {
 });
 
 fn main() {
+    #[cfg(not(debug_assertions))]
+    {
+        // If program is executed in console, attach to it
+        unsafe {
+            let _ = windows::Win32::System::Console::AttachConsole(u32::MAX);
+        }
+    }
+
     let runtime = Builder::new_multi_thread().enable_all().build().unwrap();
     let mut app = window::App::new(CONFIG.clone());
     let event_loop = EventLoop::<CustomEventLoopEvent>::with_user_event()
@@ -44,6 +52,10 @@ fn main() {
     runtime.block_on(async {
         runtime.spawn(hid::hid_task(proxy.clone(), CONFIG.layers.clone()));
         runtime.spawn(mouse_hook::mouse_hook_task(proxy));
+        runtime.spawn(async move {
+            let _ = tokio::signal::ctrl_c().await;
+            std::process::exit(0);
+        });
     });
 
     event_loop.run_app(&mut app).unwrap();
