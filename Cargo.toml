@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.96"
-async-hid = { git = "https://github.com/sidit77/async-hid", version = "0.1.0" }
+async-hid = { version = "0.4.2" }
 futures = "0.3.31"
 softbuffer = "0.4.6"
 tokio = { version = "1.43.0", features = ["full"] }

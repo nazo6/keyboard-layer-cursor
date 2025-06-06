@@ -1,4 +1,4 @@
-use async_hid::{AccessMode, DeviceInfo};
+use async_hid::{AsyncHidRead as _, HidBackend};
 use futures::StreamExt as _;
 use winit::event_loop::EventLoopProxy;
 
@@ -18,7 +18,7 @@ pub async fn hid_task(
 
 async fn handle_hid(
     proxy: &EventLoopProxy<CustomEventLoopEvent>,
-    config: &Vec<LayerConfig>,
+    config: &[LayerConfig],
 ) -> anyhow::Result<()> {
     let layer_to_ev = |l: usize| -> Option<CustomEventLoopEvent> {
         config.get(l).map(|l| match l {
@@ -27,7 +27,8 @@ async fn handle_hid(
         })
     };
 
-    let mut devices = DeviceInfo::enumerate().await?;
+    let hid = HidBackend::default();
+    let mut devices = hid.enumerate().await?;
     let mut device = None;
     while let Some(info) = devices.next().await {
         if info.usage_page == 0xFF60 && info.usage_id == 0x61 {
@@ -39,7 +40,7 @@ async fn handle_hid(
         return Err(anyhow::anyhow!("No device found"));
     };
 
-    let device = device.open(AccessMode::ReadWrite).await?;
+    let (mut device, _) = device.open().await?;
 
     if let Some(ev) = layer_to_ev(0) {
         let _ = proxy.send_event(ev);
