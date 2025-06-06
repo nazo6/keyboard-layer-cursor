@@ -1,5 +1,5 @@
 use async_hid::{AsyncHidRead as _, HidBackend};
-use futures::StreamExt as _;
+use futures_lite::StreamExt as _;
 use winit::event_loop::EventLoopProxy;
 
 use crate::{LayerConfig, window::CustomEventLoopEvent};
