@@ -717,7 +717,6 @@ dependencies = [
  "windows",
  "wineventhook",
  "winit",
- "winsafe",
 ]
 
 [[package]]
@@ -2320,12 +2319,6 @@ checksum = "c06928c8748d81b05c9be96aad92e1b6ff01833332f281e8cfca3be4b35fc9ec"
 dependencies = [
  "memchr",
 ]
-
-[[package]]
-name = "winsafe"
-version = "0.0.24"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4271ae8f63c109d73bc6fcf352b117166757fabcce6a769649ef18303dbf2491"
 
 [[package]]
 name = "wit-bindgen-rt"

@@ -24,4 +24,3 @@ windows = { version = "0.61.1", features = [
 ] }
 wineventhook = "0.9.0"
 winit = "0.30.9"
-winsafe = { version = "0.0.24", features = ["user"] }

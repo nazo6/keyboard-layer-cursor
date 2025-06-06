@@ -18,7 +18,11 @@ pub async fn mouse_hook_task(proxy: EventLoopProxy<CustomEventLoopEvent>) -> any
             if let WindowEventType::Object(MaybeKnown::Known(ObjectWindowEvent::LocationChange)) =
                 mouse_ev.event_type()
             {
-                if let Ok(pos) = winsafe::GetCursorPos() {
+                let mut pos = unsafe { std::mem::zeroed() };
+                let res =
+                    unsafe { windows::Win32::UI::WindowsAndMessaging::GetCursorPos(&mut pos) };
+
+                if res.is_ok() {
                     let _ = proxy.send_event(CustomEventLoopEvent::SetPos(pos.x, pos.y));
                 }
             }
