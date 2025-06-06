@@ -42,6 +42,37 @@ fn main() {
         }
     }
 
+    let args: Vec<_> = std::env::args().collect();
+    if Some("auto") == args.get(1).map(String::as_str) {
+        let auto = auto_launch::AutoLaunchBuilder::new()
+            .set_app_name("keyboard-layer-cursor")
+            .set_app_path(
+                &std::env::current_exe()
+                    .expect("Invalid app path")
+                    .to_string_lossy(),
+            )
+            .build()
+            .expect("Failed to configure auto launch");
+        if let Some("enable") = args.get(2).map(String::as_str) {
+            auto.enable().expect("Failed to enable auto launch");
+            println!("Auto launch enabled");
+        } else if let Some("disable") = args.get(2).map(String::as_str) {
+            auto.disable().expect("Failed to disable auto launch");
+            println!("Auto launch disabled");
+        } else {
+            println!(
+                "Auto launch is {}",
+                if auto.is_enabled().unwrap() {
+                    "enabled"
+                } else {
+                    "disabled"
+                }
+            );
+        }
+
+        return;
+    }
+
     let runtime = Builder::new_multi_thread().enable_all().build().unwrap();
     let mut app = window::App::new(CONFIG.clone());
     let event_loop = EventLoop::<CustomEventLoopEvent>::with_user_event()

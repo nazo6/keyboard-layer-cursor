@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 anyhow = "1.0.96"
 async-hid = { version = "0.4.2" }
+auto-launch = "0.5.0"
 futures-lite = "2.6.0"
 softbuffer = "0.4.6"
 tokio = { version = "1.43.0", features = [
