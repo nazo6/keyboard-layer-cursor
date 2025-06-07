@@ -80,13 +80,11 @@ fn main() {
         .unwrap();
     let proxy = event_loop.create_proxy();
 
-    runtime.block_on(async {
-        runtime.spawn(hid::hid_task(proxy.clone(), CONFIG.layers.clone()));
-        runtime.spawn(mouse_hook::mouse_hook_task(proxy));
-        runtime.spawn(async move {
-            let _ = tokio::signal::ctrl_c().await;
-            std::process::exit(0);
-        });
+    runtime.spawn(hid::hid_task(proxy.clone(), CONFIG.layers.clone()));
+    runtime.spawn(mouse_hook::mouse_hook_task(proxy));
+    runtime.spawn(async move {
+        let _ = tokio::signal::ctrl_c().await;
+        std::process::exit(0);
     });
 
     event_loop.run_app(&mut app).unwrap();
